@@ -4,31 +4,36 @@
 # @Software: PyCharm
 # @Time    : 2020/8/20 13:57
 
-from chardet import detect
 from misc.color import Colors
-from misc.encoding import Encode
+from lib.dsSocket import *
 
 class Shell:
     def __init__(self, clientSocket, sendBufferSize = 4096, recvBufferSize = 8192):
         self.clientSocket = clientSocket
         self.sendBufferSize = sendBufferSize
         self.recvBufferSize = recvBufferSize
-        self.clientSocket.send("shell".encode(Encode.encoding))
+        DShellSend(self.clientSocket, "shell")
 
     def shell(self):
-        title = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
-        cmd = input(title.strip(r"\n"))
-        self.clientSocket.send(cmd.encode(Encode.encoding))
-        if cmd.lower() in ["quit", "q", "exit"]:
-            print(Colors.RED  + "[-]" + Colors.END + " OS Shell Closed !")
-            return 0
-        else:
-            result = self.clientSocket.recv(self.recvBufferSize)
-            try:
-                resultEncoding = detect(result)["encoding"]
-                print(result.decode(resultEncoding))
-            except:
-                print(result.decode(Encode.encoding))
-        return -1
+        while True:
+            title = DShellRecv(self.clientSocket)
+            while True:
+                # cmd = input(title.strip(r"\n"))
+                cmd = input("\033[42m" + title.strip() + "\033[0m" + "> ")
+                if cmd != "":
+                    break
+            DShellSend(self.clientSocket, cmd)
+            if cmd.lower() in ["quit", "q", "exit"]:
+                print(Colors.RED + "[-]" + Colors.END + " OS Shell Closed !")
+                return 0
+            result = DShellRecv(self.clientSocket)
+            print(result)
 
+# if __name__ == "__main__":
+#     # cmd = ""
+#     while True:
+#         cmd = input("cmd> ")
+#         if cmd != "":
+#             break
+#     print(cmd)
 

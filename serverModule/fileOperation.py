@@ -8,6 +8,7 @@ import os
 from chardet import detect
 from misc.color import Colors
 from misc.encoding import Encode
+from lib.dsSocket import *
 
 class FileOPT:
     def __init__(self, cmd, clientSocket, sendBufferSize = 4096, recvBufferSize = 8192):
@@ -38,28 +39,28 @@ class FileOPT:
         # 本地校验
         if not self.checkFile(localFile):
             return -1
-        self.clientSocket.send(self.cmd.encode(Encode.encoding))
-        resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+        DShellSend(self.clientSocket, self.cmd)
+        resultCode = DShellRecv(self.clientSocket)
         if resultCode == "1":
             with open(localFile, "rb") as r:
                     binData = r.read()
-            self.clientSocket.send(binData)
-            result = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+            DShellSend(self.clientSocket, binData)
+            result = DShellRecv(self.clientSocket)
             printUploadResult(result)
         if resultCode == "0":
             print(Colors.YELLOW + "[!]" + Colors.END + " The Remote File Already Exists.")
             choice = input("Do you wang to cover the remote file?(y/n) ").lower()
             if choice == "y":
-                self.clientSocket.send("cover".encode(Encode.encoding))
+                DShellSend(self.clientSocket, "cover")
                 with open(localFile, "rb") as r:
                     binData = r.read()
-                self.clientSocket.send(binData)
-                result = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+                DShellSend(self.clientSocket, binData)
+                result = DShellRecv(self.clientSocket)
                 printUploadResult(result)
             elif choice == "n":
-                self.clientSocket.send("pass".encode(Encode.encoding))
+                DShellSend(self.clientSocket, "pass")
             else:
-                self.clientSocket.send("pass".encode(Encode.encoding))
+                DShellSend(self.clientSocket, "pass")
                 print(Colors.YELLOW + "[!]" + Colors.END + " Input Error.")
 
     # 下载文件
@@ -75,29 +76,31 @@ class FileOPT:
             remoteFile = "./" + remoteFile
         # 本地文件校验
         if not os.path.isfile(localFile):
-            self.clientSocket.send((self.cmd).encode(Encode.encoding))
-            resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+            DShellSend(self.clientSocket, self.cmd)
+            print("Send cmd successfully")
+            resultCode = DShellRecv(self.clientSocket)
+            print("recv date successfully")
             if resultCode == "findERROR":
                 print(Colors.RED + "[-]" + Colors.END + " No Such File ：%s" % (remoteFile))
                 return 0
             if resultCode == "openERROR":
                 print(Colors.RED + "[-]" + Colors.END + " The Remote File Open Failed , Maybe Do Not Have Permission !")
                 return 0
-            binData = self.clientSocket.recv(self.recvBufferSize)
+            binData = DShellRecv(self.clientSocket).encode("gbk")
             self.createFile(localFile, binData)
             return 0
         print(Colors.YELLOW + "[!]" + Colors.END + " The Local File Already Exists.")
         choice = input("Do you wang to [COVER] the file?(y/n) ").lower()
         if choice == "y":
-            self.clientSocket.send((self.cmd).encode(Encode.encoding))
-            resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+            DShellSend(self.clientSocket, self.cmd)
+            resultCode = DShellRecv(self.clientSocket)
             if resultCode == "findERROR":
                 print(Colors.RED + "[-]" + Colors.END + " No Such Remote File ：%s" % (remoteFile))
                 return 0
             if resultCode == "openERROR":
                 print(Colors.RED + "[-]" + Colors.END + " The Remote File Open Failed , Maybe Do Not Have Permission !")
                 return 0
-            binData = self.clientSocket.recv(self.recvBufferSize)
+            binData = DShellRecv(self.clientSocket).encode("gbk")
             self.createFile(localFile, binData)
         elif choice == "n":
             pass

