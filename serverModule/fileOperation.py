@@ -1,6 +1,6 @@
 #!/usr/bin/python3.7
 # -*- coding: utf-8 -*-
-# @Author  : yyxzz
+# @Author  : Cr4y0n
 # @Software: PyCharm
 # @Time    : 2020/8/20 13:58
 
@@ -15,127 +15,129 @@ class FileOPT:
         self.clientSocket = clientSocket
         self.sendBufferSize = sendBufferSize
         self.recvBufferSize = recvBufferSize
-        # self.uploadFileLocalPath = r".\fileUpload"
-        self.downloadFileLocalPath = r".\fileDownload"
 
     # 上传文件
     def fileUpload(self):
-        if "\\" not in self.cmd.lstrip("upload").strip():
-            localFilePath = ".\\" + self.cmd.lstrip("upload").strip()
-        else:
-            localFilePath = self.cmd.lstrip("upload").strip()
-        # 输入文件合法性判断
-        localFileName = localFilePath.split("\\")[-1]
+        def printUploadResult(result):
+            if result == "Success":
+                print((Colors.GREEN + "[+]" + Colors.END + " Upload Successfully ：%s" % (remoteFile)))
+            elif result == "Fail":
+                print((Colors.RED + "[-]" + Colors.END + " Upload Failed ：%s（Maybe you have no access to write.）" % (
+                    remoteFile)))
+            else:
+                print(Colors.YELLOW + "[!]" + Colors.END + " Something Error.")
+        if not self.checkCMD(self.cmd)[0]:
+            return 0
+        self.cmd = self.checkCMD(self.cmd)[1]
+        localFile = self.cmd.split()[1]
+        remoteFile = self.cmd.split()[2]
+        if "/" not in localFile:
+            localFile = "./" + localFile
+        if "/" not in remoteFile:
+            remoteFile = "./" + remoteFile
         # 本地校验
-        if not self.checkFile(localFilePath):
-            self.clientSocket.send(self.cmd[:5].encode(Encode.encoding))
+        if not self.checkFile(localFile):
             return -1
-        with open(localFilePath, "rb") as r:
-                binData = r.read()
-        self.clientSocket.send(localFileName.encode(Encode.encoding))
+        self.clientSocket.send(self.cmd.encode(Encode.encoding))
         resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
         if resultCode == "1":
+            with open(localFile, "rb") as r:
+                    binData = r.read()
             self.clientSocket.send(binData)
+            result = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+            printUploadResult(result)
         if resultCode == "0":
-            print(self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding))
-            while True:
-                choice = input("Input Choice：g(go on covering)/m(make new file)/q(quit upload) > ").lower()
-                if choice == "g":
-                    self.clientSocket.send((choice + " ..").encode(Encode.encoding))
-                    self.clientSocket.send(binData)
-                elif choice == "m":
-                    while True:
-                        newFileName = input("Input New File Name：")
-                        self.clientSocket.send((choice + " " + newFileName).encode(Encode.encoding))
-                        resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
-                        if resultCode == "1":
-                            break
-                        print(self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding))
-                    self.clientSocket.send(binData)
-                elif choice == "q":
-                    self.clientSocket.send((choice + " ..").encode(Encode.encoding))
-                    print(Colors.YELLOW + "[!] Stop Upload Successfully !" + Colors.END)
-                    return
-                else:
-                    print(Colors.RED + "[-] Input ERROR !" + Colors.END)
-                    continue
-                break
-        result = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
-        print(result)
+            print(Colors.YELLOW + "[!]" + Colors.END + " The Remote File Already Exists.")
+            choice = input("Do you wang to cover the remote file?(y/n) ").lower()
+            if choice == "y":
+                self.clientSocket.send("cover".encode(Encode.encoding))
+                with open(localFile, "rb") as r:
+                    binData = r.read()
+                self.clientSocket.send(binData)
+                result = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+                printUploadResult(result)
+            elif choice == "n":
+                self.clientSocket.send("pass".encode(Encode.encoding))
+            else:
+                self.clientSocket.send("pass".encode(Encode.encoding))
+                print(Colors.YELLOW + "[!]" + Colors.END + " Input Error.")
 
     # 下载文件
     def fileDownload(self):
-        self.clientSocket.send((self.cmd).encode(Encode.encoding))
-        resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
-        if resultCode == "findERROR":
-            print(Colors.RED + "[-] No Such File ：%s" % (self.cmd[9:]) + Colors.END)
-            return
-        if resultCode == "openERROR":
-            print(Colors.RED + "[-] Target File Open Failed , Maybe Do Not Have Permission !" % (self.cmd[9:]) + Colors.END)
-            return
-        recvFileName = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
-        binData = self.clientSocket.recv(self.recvBufferSize)
-        targetFile = self.downloadFileLocalPath + "\\" + recvFileName   # 下载相对路径
-        if not os.path.isdir(self.downloadFileLocalPath):
-            os.mkdir(self.downloadFileLocalPath)
-        if not os.path.isfile(targetFile):
-            self.createFile(recvFileName, binData)
+        if not self.checkCMD(self.cmd)[0]:
             return 0
-        # 已存在同名文件，执行以下可选操作
-        msg = Colors.YELLOW + "[!] The File Already Exists：%s " %(os.path.abspath(targetFile)) + Colors.END
-        print(msg)
-        while True:
-            choice = input("Input Choice：g(go on covering)/m(make new file)/q(quit download) > ").lower()
-            if choice == "g":
-                self.createFile(recvFileName, binData)
-            elif choice == "m":
-                while True:
-                    newFileName = input("Input New File Name：")
-                    checkResult = self.checkLocalFile(newFileName)
-                    if checkResult != "The File Already Exists":
-                        break
-                    targetFile = self.downloadFileLocalPath + "\\" + newFileName
-                    print(Colors.YELLOW + "[!] The File Already Exists：%s " % (os.path.abspath(targetFile)) + Colors.END)
-                self.createFile(newFileName, binData)
-            elif choice == "q":
-                print(Colors.YELLOW + "[!] Stop Download Successfully !" + Colors.END)
-            else:
-                print(Colors.RED + "[-] Input ERROR !" + Colors.END)
-                continue
-            return
+        self.cmd = self.checkCMD(self.cmd)[1]
+        localFile = self.cmd.split()[2]
+        remoteFile = self.cmd.split()[1]
+        if "/" not in localFile:
+            localFile = "./" + localFile
+        if "/" not in remoteFile:
+            remoteFile = "./" + remoteFile
+        # 本地文件校验
+        if not os.path.isfile(localFile):
+            self.clientSocket.send((self.cmd).encode(Encode.encoding))
+            resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+            if resultCode == "findERROR":
+                print(Colors.RED + "[-]" + Colors.END + " No Such File ：%s" % (remoteFile))
+                return 0
+            if resultCode == "openERROR":
+                print(Colors.RED + "[-]" + Colors.END + " The Remote File Open Failed , Maybe Do Not Have Permission !")
+                return 0
+            binData = self.clientSocket.recv(self.recvBufferSize)
+            self.createFile(localFile, binData)
+            return 0
+        print(Colors.YELLOW + "[!]" + Colors.END + " The Local File Already Exists.")
+        choice = input("Do you wang to [COVER] the file?(y/n) ").lower()
+        if choice == "y":
+            self.clientSocket.send((self.cmd).encode(Encode.encoding))
+            resultCode = self.clientSocket.recv(self.recvBufferSize).decode(Encode.encoding)
+            if resultCode == "findERROR":
+                print(Colors.RED + "[-]" + Colors.END + " No Such Remote File ：%s" % (remoteFile))
+                return 0
+            if resultCode == "openERROR":
+                print(Colors.RED + "[-]" + Colors.END + " The Remote File Open Failed , Maybe Do Not Have Permission !")
+                return 0
+            binData = self.clientSocket.recv(self.recvBufferSize)
+            self.createFile(localFile, binData)
+        elif choice == "n":
+            pass
+        else:
+            print(Colors.YELLOW + "[!]" + Colors.END + " Input Error.")
 
-    # 上传模块调用
     # 本地文件校验
-    def checkFile(self, localFilePath):
+    def checkFile(self, fileName):
         # 判断本地文件是否存在
-        if not os.path.isfile(localFilePath):
-            print(Colors.RED + "[-] No Such File ：%s" % (localFilePath) + Colors.END)
+        if not os.path.isfile(fileName):
+            print(Colors.RED + "[-]" + Colors.END +  " No Such Local File ：%s" % (fileName))
         else:
             try:
                 # 文件读取权限校验
-                with open(localFilePath, "rb") as r:
+                with open(fileName, "rb") as r:
                     return True
             except:
-                print(Colors.RED + "[-] File Opening Failed !" + Colors.END)
+                print(Colors.RED + "[-]" + Colors.END + " File Opening Failed !")
         return False
 
-    # 下载模块调用
-    # 检查文件是否已经存在
-    def checkLocalFile(self, FileName):
-        newFileName = FileName
-        filePath = self.downloadFileLocalPath + "\\" + newFileName
-        if os.path.isfile(filePath):
-            return "The File Already Exists"
-        return newFileName
-
-    # 下载模块调用
     # 创建文件并写入内容
-    def createFile(self, FileName, binData):
-        targetFile = self.downloadFileLocalPath + "\\" + FileName  # 下载文件的相对路径
+    def createFile(self, fileName, binData):
         fileEncoding = detect(binData)["encoding"]
         try:
-            with open(targetFile, "w", encoding=fileEncoding) as w:
+            with open(fileName, "w", encoding=fileEncoding) as w:
                 w.writelines(binData.decode(fileEncoding))
-                print(Colors.GREEN + "[+] Download Successfully ：%s" % (os.path.abspath(targetFile)) + Colors.END)
+                print(Colors.GREEN + "[+]" + Colors.END + " Download Successfully ：%s" % (fileName))
         except:
-            print(Colors.RED + "[-] File Opening Failed ：%s" % (os.path.abspath(targetFile)) + Colors.END)
+            print(Colors.RED + "[-]" + Colors.END + " File Opening Failed ：%s" % (fileName))
+
+    # 上传下载命令合理性校验
+    def checkCMD(self, cmd):
+        # 合理性
+        if len(cmd.split()) not in [2, 3]:
+            print(Colors.YELLOW + "[!]" + Colors.END + " Input Error.")
+            return False, cmd
+        # 未指定第三个参数，进行补充
+        if len(cmd.split()) == 2:
+            if "/" in cmd.split()[1]:
+                cmd += " " + cmd.split()[1].split("/")[-1]
+            else:
+                cmd += " " + cmd.split()[1]
+        return True, cmd

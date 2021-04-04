@@ -1,0 +1,1 @@
+import osprint(os.getcwd())print(os.path.abspath(os.path.pardir))os.chdir(os.path.abspath(os.path.pardir))print(os.getcwd())
