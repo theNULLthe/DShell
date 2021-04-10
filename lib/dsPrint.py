@@ -13,6 +13,8 @@ PURPLE ：保留
 CYAN ：次要提示
 """
 
+import os
+
 class Colors:
     RED = "\033[91m"
     GREEN = "\033[32m"
@@ -23,6 +25,9 @@ class Colors:
     END = "\033[0m"
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
+    bgGREEN = "\033[42m"
+
+os.system('')
 
 # 成功消息 绿色
 def successPrint(msg):
@@ -38,5 +43,7 @@ def warningPrint(msg):
 
 # 错误/失败消息 红色
 def errorPrint(msg):
-    pass
+    print(Colors.RED + "[-] " + Colors.END + msg)
 
+def bgGreenPrint(msg):
+    print(Colors.bgGREEN + msg + Colors.END)

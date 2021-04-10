@@ -4,8 +4,8 @@
 # @Software: PyCharm
 # @Time    : 2020/8/20 13:57
 
-from misc.color import Colors
 from lib.dsSocket import *
+from lib.dsPrint import *
 
 class Shell:
     def __init__(self, clientSocket, sendBufferSize = 4096, recvBufferSize = 8192):
@@ -24,16 +24,10 @@ class Shell:
                     break
             DShellSend(self.clientSocket, cmd)
             if cmd.lower() in ["quit", "q", "exit"]:
-                print(Colors.RED + "[-]" + Colors.END + " OS Shell Closed !")
+                # print(Colors.RED + "[-]" + Colors.END + " OS Shell Closed !")
+                errorPrint("OS Shell Closed !")
                 return 0
             result = DShellRecv(self.clientSocket)
             print(result)
 
-# if __name__ == "__main__":
-#     # cmd = ""
-#     while True:
-#         cmd = input("cmd> ")
-#         if cmd != "":
-#             break
-#     print(cmd)
 

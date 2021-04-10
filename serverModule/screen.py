@@ -5,7 +5,6 @@
 # @Time    : 2021/3/12 16:25
 
 import time
-import os
 from base64 import b64decode
 from lib.dsSocket import *
 from lib.dsPrint import *
@@ -25,10 +24,10 @@ class Screen():
         self.outputPath = r"./output/screen/"
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)
-        self.date = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+        self.date = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
         DShellSend(self.clientSocket, "screen")
         base64Date = DShellRecv(self.clientSocket)
         # print(f"{self.outputPath}screen-{self.date}.png")
-        self.base642image(base64Date, f"{self.outputPath}screen-{self.date}.png")
+        self.base642image(base64Date, f"{self.outputPath}screen_{self.date}.png")
         # print(f"{self.outputPath}screen-{self.date}.png")
-        successPrint("Screen successfully!")
+        successPrint(f"Screen successfully: {self.outputPath}screen_{self.date}.png")

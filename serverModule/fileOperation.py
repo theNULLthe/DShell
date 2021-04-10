@@ -7,7 +7,6 @@
 import os
 from chardet import detect
 from misc.color import Colors
-from misc.encoding import Encode
 from lib.dsSocket import *
 
 class FileOPT:
@@ -71,7 +70,7 @@ class FileOPT:
         localFile = self.cmd.split()[2]
         remoteFile = self.cmd.split()[1]
         if "/" not in localFile:
-            localFile = "./" + localFile
+            localFile = "./output/download/" + localFile
         if "/" not in remoteFile:
             remoteFile = "./" + remoteFile
         # 本地文件校验
@@ -125,6 +124,8 @@ class FileOPT:
     def createFile(self, fileName, binData):
         fileEncoding = detect(binData)["encoding"]
         try:
+            if not os.path.isdir("./output/download/"):
+                os.mkdir("./output/download/")
             with open(fileName, "w", encoding=fileEncoding) as w:
                 w.writelines(binData.decode(fileEncoding))
                 print(Colors.GREEN + "[+]" + Colors.END + " Download Successfully ：%s" % (fileName))
