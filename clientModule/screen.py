@@ -30,5 +30,5 @@ class Screen():
             return base64Data
 
 if __name__ == "__main__":
-    # Screen(self.client)
+    Screen(self.client)
     pass

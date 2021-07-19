@@ -21,6 +21,9 @@ class Screen():
             f.write(imageData)
 
     def screens(self):
+        self.outputPath = r"./output/"
+        if not os.path.isdir(self.outputPath):
+            os.mkdir(self.outputPath)
         self.outputPath = r"./output/screen/"
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)

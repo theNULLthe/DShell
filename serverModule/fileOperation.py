@@ -126,7 +126,7 @@ class FileOPT:
         try:
             if not os.path.isdir("./output/download/"):
                 os.mkdir("./output/download/")
-            with open(fileName, "w", encoding=fileEncoding) as w:
+            with open(fileName, "w", encoding=fileEncoding, newline="") as w:
                 w.writelines(binData.decode(fileEncoding))
                 print(Colors.GREEN + "[+]" + Colors.END + " Download Successfully ：%s" % (fileName))
         except:

